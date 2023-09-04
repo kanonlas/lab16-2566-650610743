@@ -1,5 +1,6 @@
 import { DB } from "@/app/libs/DB";
 import {
+  zStudentDeleteBody,
   zStudentGetParam,
   zStudentPostBody,
   zStudentPutBody,
@@ -29,10 +30,19 @@ export const GET = async (request) => {
   if (program !== null) {
     filtered = filtered.filter((std) => std.program === program);
   }
+  //////////////////////////////////////////////////////////////////
+  if (studentId !== null) {
+    filtered = filtered.filter((std) => std.studentId === studentId);
+  }
 
   //filter by student id here
+  //////////////////////////////////////////////////////////////////
 
-  return NextResponse.json({ ok: true, students: filtered });
+  return NextResponse.json({
+    ok: true,
+    students: filtered,
+  });
+  ////////////////////////////////////////////////////////////////////
 };
 
 export const POST = async (request) => {
@@ -98,8 +108,43 @@ export const PUT = async (request) => {
 
 export const DELETE = async (request) => {
   //get body and validate it
-
+  const body = await request.json();
+  const parseResult = zStudentDeleteBody.safeParse(body);
   //check if student id exist
+
+  // DB.students = DB.students.filter((std) => std.studentId !== studentId);
+
+  if (parseResult.success === false) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: parseResult.error.issues[0].message,
+      },
+      { status: 400 }
+    );
+  }
+
+  const foundIndex = DB.students.findIndex(
+    (std) => std.studentId === body.studentId
+  );
+  if (foundIndex === -1) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Student ID does not exist",
+      },
+      { status: 404 }
+    );
+  }
+  let spliced = DB.students;
+  if (body.studentId !== null) {
+    spliced = spliced.splice(foundIndex, 1);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    message: `Student Id ${body.studentId} has been deleted`,
+  });
 
   //perform removing student from DB. You can choose from 2 choices
   //1. use array filter method
@@ -107,9 +152,4 @@ export const DELETE = async (request) => {
 
   //or 2. use splice array method
   // DB.students.splice(...)
-
-  return NextResponse.json({
-    ok: true,
-    message: `Student Id xxx has been deleted`,
-  });
 };
